@@ -21,11 +21,20 @@
   button.option:hover { background: #e2e8f0; }
   button.option.correct { background: #dcfce7; border-color: var(--green); color: #166534; }
   button.option.wrong { background: #fee2e2; border-color: var(--red); color: #991b1b; }
+  button.option:disabled { cursor: default; }
   .explanation {
     margin-top: 12px; padding: 12px 14px; background: #f0fdf4; border-left: 4px solid var(--green);
     border-radius: 8px; font-size: 0.95rem; display: none;
   }
   .explanation.show { display: block; }
+  .nav {
+    display: flex; gap: 12px; margin-top: 16px; justify-content: space-between;
+  }
+  .nav button {
+    flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600;
+    cursor: pointer; background: #3b82f6; color: white;
+  }
+  .nav button:disabled { background: #cbd5e1; cursor: not-allowed; }
   .score { text-align: center; font-size: 1.2rem; margin: 20px 0; font-weight: 600; }
   .restart { display: block; margin: 20px auto; padding: 12px 24px; background: #3b82f6; color: white;
     border: none; border-radius: 12px; font-size: 1rem; cursor: pointer; }
@@ -121,20 +130,20 @@ const questions = [
 
 let current = 0;
 let score = 0;
-let answered = false;
+let answers = new Array(questions.length).fill(null); // null = not answered, number = selected index
 
 function startQuiz() {
   current = 0;
   score = 0;
-  answered = false;
+  answers = new Array(questions.length).fill(null);
   document.getElementById("score").textContent = "";
   document.getElementById("restart").style.display = "none";
   renderQuestion();
-  updateProgress();
 }
 
 function updateProgress() {
-  const pct = (current / questions.length) * 100;
+  const answeredCount = answers.filter(a => a !== null).length;
+  const pct = (answeredCount / questions.length) * 100;
   document.getElementById("progress").style.width = pct + "%";
 }
 
@@ -144,38 +153,59 @@ function renderQuestion() {
     return;
   }
   const q = questions[current];
-  answered = false;
+  const selected = answers[current];
   const quiz = document.getElementById("quiz");
+
   quiz.innerHTML = `
     <div class="question">
       <div class="q-title">${current + 1}. ${q.q}</div>
       <div class="options">
         ${q.options.map((opt, i) => `
-          <button class="option" onclick="select(${i})">${opt}</button>
+          <button class="option" ${selected !== null ? 'disabled' : ''} onclick="select(${i})">${opt}</button>
         `).join("")}
       </div>
-      <div class="explanation" id="explain">${q.explain}</div>
+      <div class="explanation ${selected !== null ? 'show' : ''}" id="explain">${q.explain}</div>
+      <div class="nav">
+        <button onclick="prev()" ${current === 0 ? 'disabled' : ''}>← Назад</button>
+        <button onclick="next()" ${selected === null ? 'disabled' : ''}>Далее →</button>
+      </div>
     </div>
   `;
+
+  if (selected !== null) {
+    const buttons = quiz.querySelectorAll(".option");
+    buttons.forEach((btn, i) => {
+      if (i === q.correct) btn.classList.add("correct");
+      else if (i === selected) btn.classList.add("wrong");
+    });
+  }
+
   updateProgress();
 }
 
 function select(idx) {
-  if (answered) return;
-  answered = true;
-  const q = questions[current];
-  const buttons = document.querySelectorAll(".option");
-  buttons.forEach((btn, i) => {
-    btn.disabled = true;
-    if (i === q.correct) btn.classList.add("correct");
-    else if (i === idx) btn.classList.add("wrong");
-  });
-  if (idx === q.correct) score++;
-  document.getElementById("explain").classList.add("show");
-  setTimeout(() => {
+  if (answers[current] !== null) return;
+  answers[current] = idx;
+  if (idx === questions[current].correct) score++;
+  renderQuestion();
+}
+
+function next() {
+  if (answers[current] === null) return;
+  if (current < questions.length - 1) {
     current++;
     renderQuestion();
-  }, 1800);
+  } else {
+    current = questions.length;
+    showResult();
+  }
+}
+
+function prev() {
+  if (current > 0) {
+    current--;
+    renderQuestion();
+  }
 }
 
 function showResult() {
