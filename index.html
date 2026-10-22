@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тест по методичке: Ёлки и пихты</title>
+<style>
+  :root { --green: #22c55e; --red: #ef4444; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 16px; line-height: 1.5; }
+  .container { max-width: 720px; margin: 0 auto; }
+  h1 { text-align: center; font-size: 1.6rem; margin-bottom: 8px; }
+  .subtitle { text-align: center; color: #64748b; margin-bottom: 24px; }
+  .question { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .q-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 12px; }
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  button.option {
+    background: #f1f5f9; border: 2px solid transparent; border-radius: 12px; padding: 14px 16px;
+    text-align: left; font-size: 1rem; cursor: pointer; transition: all 0.15s;
+  }
+  button.option:hover { background: #e2e8f0; }
+  button.option.correct { background: #dcfce7; border-color: var(--green); color: #166534; }
+  button.option.wrong { background: #fee2e2; border-color: var(--red); color: #991b1b; }
+  .explanation {
+    margin-top: 12px; padding: 12px 14px; background: #f0fdf4; border-left: 4px solid var(--green);
+    border-radius: 8px; font-size: 0.95rem; display: none;
+  }
+  .explanation.show { display: block; }
+  .score { text-align: center; font-size: 1.2rem; margin: 20px 0; font-weight: 600; }
+  .restart { display: block; margin: 20px auto; padding: 12px 24px; background: #3b82f6; color: white;
+    border: none; border-radius: 12px; font-size: 1rem; cursor: pointer; }
+  .progress { height: 6px; background: #e2e8f0; border-radius: 3px; margin-bottom: 20px; overflow: hidden; }
+  .progress-bar { height: 100%; background: #3b82f6; width: 0%; transition: width 0.3s; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Тест по методичке</h1>
+  <p class="subtitle">Ёлки и пихты · Сопутствующие товары и услуги</p>
+  <div class="progress"><div class="progress-bar" id="progress"></div></div>
+  <div id="quiz"></div>
+  <div class="score" id="score"></div>
+  <button class="restart" id="restart" style="display:none" onclick="startQuiz()">Пройти ещё раз</button>
+</div>
+
+<script>
+const questions = [
+  {
+    q: "Какой вид держит вид дольше всех (4–6 недель+)?",
+    options: ["Пихта Нордмана", "Пихта Фразера", "Канадская сосна", "Норвежская ель"],
+    correct: 1,
+    explain: "Пихта Фразера — самый долгий срок. Практически не осыпается и имеет яркий хвойно-цитрусовый аромат."
+  },
+  {
+    q: "У какой пихты почти нет запаха?",
+    options: ["Фразера", "Нордмана", "Канадской сосны", "Сибирской"],
+    correct: 1,
+    explain: "У Нордмана запах утончённый, почти неуловимый. Если клиенту важен запах — предлагаем букеты сибирской пихты."
+  },
+  {
+    q: "Какой приоритет продажи у пихты Нордмана?",
+    options: ["+++", "++++", "+++++", "+"],
+    correct: 2,
+    explain: "Нордман — высший приоритет (+++++). Самая пышная, премиальная, почти не осыпается."
+  },
+  {
+    q: "Что делать, если клиент впервые заказывает и смотрит на норвежскую или голубую ель?",
+    options: ["Сразу продавать ель", "Предложить скидку", "Переключить на Нордман / Фразер / Канадку", "Сказать, что ель лучше"],
+    correct: 2,
+    explain: "Если клиент заказывает впервые — сразу переключаем на топы (Нордман, Фразер, Канадка). Они дольше держат вид и меньше сыплются."
+  },
+  {
+    q: "Какая ёлка сильно осыпается и держит вид всего 1–2 недели?",
+    options: ["Нордман", "Фразер", "Канадская сосна", "Норвежская и голубая ель"],
+    correct: 3,
+    explain: "Норвежская и голубая ель держат вид 1–2 недели и сильно осыпаются. Российские — ещё хуже."
+  },
+  {
+    q: "Для каких деревьев можно использовать песок + ведро вместо подставки?",
+    options: ["Для всех", "Только для пихт", "Только для русской ели и сосны", "Только для канадской сосны"],
+    correct: 2,
+    explain: "Песок + ведро — только для русской ели и сосны. Остальные тяжёлые и упадут."
+  },
+  {
+    q: "Что делать, если клиента смущает слабый запах Нордмана?",
+    options: ["Предложить другую пихту", "Сразу предложить букеты сибирской пихты", "Сказать, что запаха и не будет", "Дать скидку"],
+    correct: 1,
+    explain: "Если смущает запах — сразу предлагаем букеты сибирской пихты (самый ароматный вариант)."
+  },
+  {
+    q: "Какой лапник самый ароматный?",
+    options: ["Нобилис", "Сибирская пихта", "Ветки Нордмана", "Сосновый"],
+    correct: 1,
+    explain: "Сибирская пихта — самый ароматный. Держит 1–2 недели, запах как пихтовое масло."
+  },
+  {
+    q: "Какой лапник лучше всего подходит для декора (венки, композиции)?",
+    options: ["Сибирская пихта", "Нобилис", "Еловый", "Сосновый"],
+    correct: 1,
+    explain: "Нобилис — основной для декора. Долго держит вид, почти не осыпается и почти не пахнет."
+  },
+  {
+    q: "Какие услуги предлагаем после выбора ёлки?",
+    options: ["Только установку", "Подрубку, установку и утилизацию", "Только утилизацию", "Никаких, если клиент не спросил"],
+    correct: 1,
+    explain: "После выбора ёлки предлагаем все 3 услуги подряд: подрубку ствола, установку и утилизацию. Обычно берут все сразу."
+  },
+  {
+    q: "Как измеряется высота срезанной ёлки?",
+    options: ["От пола до макушки", "От начала ствола до кончиков последнего ряда веток", "По самому длинному отростку", "От земли до верхушки"],
+    correct: 1,
+    explain: "Срезка — от начала ствола до кончиков последнего ряда веток. Горшок — от пола до макушки."
+  },
+  {
+    q: "Что говорит клиенту, если он просит скидку?",
+    options: ["Даём 10%", "У нас самое премиальное качество и сервис — снижение цены ударит по качеству", "Скидка только на ели", "Скидок нет вообще"],
+    correct: 1,
+    explain: "Скидки не даём. Аргумент: премиальное качество и сервис."
+  }
+];
+
+let current = 0;
+let score = 0;
+let answered = false;
+
+function startQuiz() {
+  current = 0;
+  score = 0;
+  answered = false;
+  document.getElementById("score").textContent = "";
+  document.getElementById("restart").style.display = "none";
+  renderQuestion();
+  updateProgress();
+}
+
+function updateProgress() {
+  const pct = (current / questions.length) * 100;
+  document.getElementById("progress").style.width = pct + "%";
+}
+
+function renderQuestion() {
+  if (current >= questions.length) {
+    showResult();
+    return;
+  }
+  const q = questions[current];
+  answered = false;
+  const quiz = document.getElementById("quiz");
+  quiz.innerHTML = `
+    <div class="question">
+      <div class="q-title">${current + 1}. ${q.q}</div>
+      <div class="options">
+        ${q.options.map((opt, i) => `
+          <button class="option" onclick="select(${i})">${opt}</button>
+        `).join("")}
+      </div>
+      <div class="explanation" id="explain">${q.explain}</div>
+    </div>
+  `;
+  updateProgress();
+}
+
+function select(idx) {
+  if (answered) return;
+  answered = true;
+  const q = questions[current];
+  const buttons = document.querySelectorAll(".option");
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correct) btn.classList.add("correct");
+    else if (i === idx) btn.classList.add("wrong");
+  });
+  if (idx === q.correct) score++;
+  document.getElementById("explain").classList.add("show");
+  setTimeout(() => {
+    current++;
+    renderQuestion();
+  }, 1800);
+}
+
+function showResult() {
+  const quiz = document.getElementById("quiz");
+  quiz.innerHTML = "";
+  document.getElementById("score").innerHTML = `Результат: <strong>${score} из ${questions.length}</strong>`;
+  document.getElementById("progress").style.width = "100%";
+  document.getElementById("restart").style.display = "block";
+}
+
+startQuiz();
+</script>
+</body>
+</html>
